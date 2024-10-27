@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.4.0"
+TOOLS_VERSION="2.5.0"
 
 set -x
 
@@ -113,6 +113,27 @@ export DESC2=""
     tar -I zstd -xvf $APP_DIR/bins/app-binary-$ARCH.tar.zst\
  -C $deb_app_dir/files/
     cp -r $res_path/* $deb_app_dir/
+}
+
+### Generate control from template
+{
+    rm -rf $deb_build_dir/control
+    cat <<EOF >$deb_build_dir/control
+Source: $PACKAGE
+Section: games
+Priority: optional
+Maintainer: Next Electron Wrapper <lu1044100652@outlook.com>
+Vendor: ziggy1030 <lu1044100652@outlook.com>
+Build-Depends: debhelper (>= 11)
+Standards-Version: 4.1.3
+Homepage: $HOMEPAGE
+
+Package: $PACKAGE
+Architecture: any
+Version: $VERSION
+Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0
+Description: $NAME is an online mini-game provided by the Poki platform.
+EOF
 }
 
 ### info file
