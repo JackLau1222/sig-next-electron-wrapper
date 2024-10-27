@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.2.0"
+TOOLS_VERSION="2.4.0"
 
 set -x
 
@@ -10,6 +10,7 @@ ARCH=$(uname -m)
 icon_url=""
 
 ## Writeable Envs
+{
 NODE_PATH=""
 export PATH="$NODE_PATH:$PATH"
 export ELECTRON_VERSION=""
@@ -30,8 +31,7 @@ export SECTION="misc"
 export PROVIDE=""
 export DESC1="Electron wrapper for $HOMEPAGE"
 export DESC2=""
-
-#export INGREDIENTS=(nodejs)
+}
 
 ## Generated
 
@@ -54,11 +54,13 @@ export DESC2=""
 }
 
 ### Resize icons
+{
     res_path="$APP_DIR/res"
     icons_path="$APP_DIR/res/entries/icons/hicolor/128x128/apps"
     desktop_file_path="$APP_DIR/res/entries/applications"
     mkdir -p $icons_path $desktop_file_path
     convert -resize 128x128! $res_sources/icon-origin.png $icons_path/$PACKAGE.png
+}
 
     pushd "$APP_DIR"
 
@@ -76,30 +78,25 @@ export DESC2=""
 ## tar binaries
 {
     mkdir -p "$APP_DIR/bins"
-    tar -caf $APP_DIR/bins/resources.tar.zst $APP_DIR/files/resources
 
-    mv $APP_DIR/out/linux-unpacked $APP_DIR/$PACKAGE
-    tar -caf $APP_DIR/bins/app-binary-$ARCH.tar.zst $APP_DIR/$PACKAGE
+    pushd "$APP_DIR/files/resources"
+
+    tar -caf resources.tar.zst ./app.asar
+    mv resources.tar.zst $APP_DIR/bins
+
+    pushd "$APP_DIR/out"
+    mv linux-unpacked $PACKAGE
+
+    tar -caf app-binary-$ARCH.tar.zst ./$PACKAGE
+    mv app-binary-$ARCH.tar.zst $APP_DIR/bins
 }
 
     popd
 
     rm -rf $APP_DIR/entries/icons/hicolor/**/apps/icon.png
 
-    mkdir -p "$APP_DIR/entries/applications"
-    cat <<EOF >$APP_DIR/entries/applications/$PACKAGE.desktop
-[Desktop Entry]
-Name=$NAME
-Name[zh_CN]=$NAME_CN
-Exec=env PACKAGE=$PACKAGE /opt/apps/$PACKAGE/files/run.sh %U
-Terminal=false
-Type=Application
-Icon=$PACKAGE
-StartupWMClass=$PACKAGE
-Categories=Games;
-EOF
 
-## deb packing
+## deb packing preparing
 ### Init build dir for the app
 {
     deb_build_dir="$APP_DIR/deb-build-pool/$PACKAGE-$VERSION"
@@ -111,7 +108,59 @@ EOF
     dh_make --createorig -s -n -y
 }
 
+## Generate deb build dir res
+{
+    tar -I zstd -xvf $APP_DIR/bins/app-binary-$ARCH.tar.zst\
+ -C $deb_app_dir/files/
+    cp -r $res_path/* $deb_app_dir/
+}
 
+### info file
+{
+    cat <<EOF >$deb_app_dir/info
+{
+  "appid": "$PACKAGE",
+  "name": "$NAME",
+  "version": "$VERSION",
+  "arch": [
+    "amd64,arm64"
+  ],
+  "permissions": {
+    "autostart": false,
+    "notification": false,
+    "trayicon": false,
+    "clipboard": true,
+    "account": false,
+    "bluetooth": false,
+    "camera": false,
+    "audio_record": false,
+    "installed_apps": false
+  }
+}
+EOF
+}
+
+### desktop file
+{
+    mkdir -p "$deb_app_dir/entries/applications"
+    cat <<EOF >$deb_app_dir/entries/applications/$PACKAGE.desktop
+[Desktop Entry]
+Name=$NAME
+Name[zh_CN]=$NAME_CN
+Comment=$NAME is an online mini-game provided by the Poki platform.
+Comment[zh_CN]=$NAME_CN 是Poki平台提供的一款在线小型游戏.
+Exec=env PACKAGE=$PACKAGE /opt/apps/$PACKAGE/files/run.sh %U
+Icon=$PACKAGE
+Type=Application
+Categories=Games;
+StartupWMClass=$PACKAGE
+
+Terminal=false
+StartupNotify=true
+EOF
+}
+
+### Files copy
 {
     mkdir -p $APP_DIR/deb-build-pool
     mkdir -p $BUILD_DIR/build-pool/$PACKAGE
