@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.5.0"
+TOOLS_VERSION="2.5.1"
 
 set -x
 
@@ -106,6 +106,8 @@ export DESC2=""
     pushd "$deb_build_dir"
 
     dh_make --createorig -s -n -y
+    rm debian/*.ex debian/*.EX
+    rm -rf debian/*.docs debian/README debian/README.*
 }
 
 ## Generate deb build dir res
@@ -117,8 +119,8 @@ export DESC2=""
 
 ### Generate control from template
 {
-    rm -rf $deb_build_dir/control
-    cat <<EOF >$deb_build_dir/control
+    rm -rf $deb_build_dir/debian/control
+    cat <<EOF >$deb_build_dir/debian/control
 Source: $PACKAGE
 Section: games
 Priority: optional
@@ -135,6 +137,10 @@ Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi
 Description: $NAME is an online mini-game provided by the Poki platform.
 EOF
 }
+
+### install file
+    rm -rf $deb_build_dir/debian/install
+    echo "opt/ /" > $deb_build_dir/debian/install
 
 ### info file
 {
@@ -180,6 +186,11 @@ Terminal=false
 StartupNotify=true
 EOF
 }
+
+
+## deb Packing
+
+debuild -b -us -uc -tc
 
 ### Files copy
 {
