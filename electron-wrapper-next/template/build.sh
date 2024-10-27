@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.3.3"
+TOOLS_VERSION="2.4.0"
 
 set -x
 
@@ -84,35 +84,17 @@ export DESC2=""
     tar -caf resources.tar.zst ./app.asar
     mv resources.tar.zst $APP_DIR/bins
 
-    popd
-
-    mv $APP_DIR/out/linux-unpacked $APP_DIR/$PACKAGE
-
     pushd "$APP_DIR/out"
+    mv linux-unpacked $PACKAGE
 
     tar -caf app-binary-$ARCH.tar.zst ./$PACKAGE
     mv app-binary-$ARCH.tar.zst $APP_DIR/bins
-
-    popd
-
 }
 
     popd
 
     rm -rf $APP_DIR/entries/icons/hicolor/**/apps/icon.png
 
-    mkdir -p "$APP_DIR/entries/applications"
-    cat <<EOF >$APP_DIR/entries/applications/$PACKAGE.desktop
-[Desktop Entry]
-Name=$NAME
-Name[zh_CN]=$NAME_CN
-Exec=env PACKAGE=$PACKAGE /opt/apps/$PACKAGE/files/run.sh %U
-Terminal=false
-Type=Application
-Icon=$PACKAGE
-StartupWMClass=$PACKAGE
-Categories=Games;
-EOF
 
 ## deb packing preparing
 ### Init build dir for the app
@@ -158,6 +140,25 @@ EOF
 EOF
 }
 
+### desktop file
+{
+    mkdir -p "$deb_app_dir/entries/applications"
+    cat <<EOF >$deb_app_dir/entries/applications/$PACKAGE.desktop
+[Desktop Entry]
+Name=$NAME
+Name[zh_CN]=$NAME_CN
+Comment=$NAME is an online mini-game provided by the Poki platform.
+Comment[zh_CN]=$NAME_CN 是Poki平台提供的一款在线小型游戏.
+Exec=env PACKAGE=$PACKAGE /opt/apps/$PACKAGE/files/run.sh %U
+Icon=$PACKAGE
+Type=Application
+Categories=Games;
+StartupWMClass=$PACKAGE
+
+Terminal=false
+StartupNotify=true
+EOF
+}
 
 ### Files copy
 {
