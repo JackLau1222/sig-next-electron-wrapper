@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.2.0"
+TOOLS_VERSION="2.3.1"
 
 set -x
 
@@ -111,7 +111,40 @@ EOF
     dh_make --createorig -s -n -y
 }
 
+### Generate deb build dir res
+{
+    tar -I zstd -xvf $APP_DIR/bins/app-binary-$ARCH.tar.zst\
+ -C $deb_app_dir/files/
+    cp -RT $res_path/* $deb_app_dir/
+}
 
+### info file
+{
+    cat <<EOF >$deb_app_dir/info
+{
+  "appid": "$PACKAGE",
+  "name": "$NAME",
+  "version": "$VERSION",
+  "arch": [
+    "amd64,arm64"
+  ],
+  "permissions": {
+    "autostart": false,
+    "notification": false,
+    "trayicon": false,
+    "clipboard": true,
+    "account": false,
+    "bluetooth": false,
+    "camera": false,
+    "audio_record": false,
+    "installed_apps": false
+  }
+}
+EOF
+}
+
+
+### Files copy
 {
     mkdir -p $APP_DIR/deb-build-pool
     mkdir -p $BUILD_DIR/build-pool/$PACKAGE
