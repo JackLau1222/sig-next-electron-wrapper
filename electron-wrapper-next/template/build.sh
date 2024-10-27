@@ -1,12 +1,13 @@
 #!/bin/bash
 
-TOOLS_VERSION="1.2.0"
+TOOLS_VERSION="2.1.0"
 
 set -x
 
 SELF=$(readlink -f "$0")
 BUILD_DIR=${SELF%/*}
 ARCH=$(uname -m)
+icon_url=""
 
 ## Writeable Envs
 NODE_PATH=""
@@ -17,7 +18,7 @@ export PACKAGE=""
 export NAME=""
 export NAME_CN=""
 export VERSION="$ELECTRON_VERSION"
-export URL="icon.png::icon-url"
+export URL="icon.png::icon_url"
 export DO_NOT_UNARCHIVE=1
 # autostart,notification,trayicon,clipboard,account,bluetooth,camera,audio_record,installed_apps
 export REQUIRED_PERMISSIONS=""
@@ -35,15 +36,29 @@ export DESC2=""
 ## Generated
 
 ### Init build dir for single app
-    mkdir -p ${BUILD_DIR}/build-pool
+    mkdir -p $BUILD_DIR/build-pool
 {
-    mkdir -p ${BUILD_DIR}/build-pool/$PACKAGE
-    APP_DIR=${BUILD_DIR}/build-pool/$PACKAGE
+    mkdir -p $BUILD_DIR/build-pool/$PACKAGE
+    APP_DIR=$BUILD_DIR/build-pool/$PACKAGE
     cp "$BUILD_DIR/templates/index.js" "$APP_DIR/index.js"
-    mkdir -p ${APP_DIR}/files/
-    cp "${BUILD_DIR}/templates/run.sh" "$APP_DIR/files/run.sh"
-    cat "${BUILD_DIR}/templates/package.json" | envsubst >"$APP_DIR/package.json"
+    mkdir -p $APP_DIR/files/
+    cp "$BUILD_DIR/templates/run.sh" "$APP_DIR/files/run.sh"
+    cat "$BUILD_DIR/templates/package.json" | envsubst >"$APP_DIR/package.json"
 }
+
+### Get icons
+{
+    res_sources="$APP_DIR/res-sources"
+    mkdir -p $res_sources
+    wget -c $icon_url -O $res_sources/icon-origin.png
+}
+
+### Resize icons
+    res_path="$APP_DIR/res"
+    icons_path="$APP_DIR/res/entries/icons/hicolor/128x128/apps"
+    desktop_file_path="$APP_DIR/res/entries/applications"
+    mkdir -p $icons_path $desktop_file_path
+    convert -resize 128x128! $res_sources/icon-origin.png $icons_path/$PACKAGE.png
 
     pushd "$APP_DIR"
 
@@ -54,7 +69,7 @@ export DESC2=""
     npm run build
     mkdir -p $APP_DIR/files/resources/
     cp -RT $APP_DIR/out/linux-unpacked/resources $APP_DIR/files/resources
-    mkdir -p "${APP_DIR}/files/userscripts"
+    mkdir -p "$APP_DIR/files/userscripts"
     cp "$APP_DIR"/*.js "${APP_DIR}/files/userscripts/"
 }
 
