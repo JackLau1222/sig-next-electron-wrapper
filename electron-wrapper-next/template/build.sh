@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.1.0"
+TOOLS_VERSION="2.2.0"
 
 set -x
 
@@ -62,7 +62,7 @@ export DESC2=""
 
     pushd "$APP_DIR"
 
-### Building
+## Building
 {
  #   export ELECTRON_MIRROR=https://registry.npmmirror.com/
     npm install 
@@ -73,7 +73,7 @@ export DESC2=""
     cp "$APP_DIR"/*.js "${APP_DIR}/files/userscripts/"
 }
 
-### tar binaries
+## tar binaries
 {
     mkdir -p "$APP_DIR/bins"
     tar -caf $APP_DIR/bins/resources.tar.zst $APP_DIR/files/resources
@@ -98,3 +98,26 @@ Icon=$PACKAGE
 StartupWMClass=$PACKAGE
 Categories=Games;
 EOF
+
+## deb packing
+### Init build dir for the app
+{
+    deb_build_dir="$APP_DIR/deb-build-pool/$PACKAGE-$VERSION"
+    deb_app_dir="$deb_build_dir/opt/apps/$PACKAGE/"
+    mkdir -p $deb_build_dir $deb_app_dir/files
+
+    pushd "$deb_build_dir"
+
+    dh_make --createorig -s -n -y
+}
+
+
+{
+    mkdir -p $APP_DIR/deb-build-pool
+    mkdir -p $BUILD_DIR/build-pool/$PACKAGE
+    APP_DIR=$BUILD_DIR/build-pool/$PACKAGE
+    cp "$BUILD_DIR/templates/index.js" "$APP_DIR/index.js"
+    mkdir -p $APP_DIR/files/
+    cp "$BUILD_DIR/templates/run.sh" "$APP_DIR/files/run.sh"
+    cat "$BUILD_DIR/templates/package.json" | envsubst >"$APP_DIR/package.json"
+}
