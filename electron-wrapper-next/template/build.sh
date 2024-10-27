@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.3.2"
+TOOLS_VERSION="2.3.3"
 
 set -x
 
@@ -10,6 +10,7 @@ ARCH=$(uname -m)
 icon_url=""
 
 ## Writeable Envs
+{
 NODE_PATH=""
 export PATH="$NODE_PATH:$PATH"
 export ELECTRON_VERSION=""
@@ -30,8 +31,7 @@ export SECTION="misc"
 export PROVIDE=""
 export DESC1="Electron wrapper for $HOMEPAGE"
 export DESC2=""
-
-#export INGREDIENTS=(nodejs)
+}
 
 ## Generated
 
@@ -54,11 +54,13 @@ export DESC2=""
 }
 
 ### Resize icons
+{
     res_path="$APP_DIR/res"
     icons_path="$APP_DIR/res/entries/icons/hicolor/128x128/apps"
     desktop_file_path="$APP_DIR/res/entries/applications"
     mkdir -p $icons_path $desktop_file_path
     convert -resize 128x128! $res_sources/icon-origin.png $icons_path/$PACKAGE.png
+}
 
     pushd "$APP_DIR"
 
@@ -76,10 +78,23 @@ export DESC2=""
 ## tar binaries
 {
     mkdir -p "$APP_DIR/bins"
-    tar -caf $APP_DIR/bins/resources.tar.zst $APP_DIR/files/resources
+
+    pushd "$APP_DIR/files/resources"
+
+    tar -caf resources.tar.zst ./app.asar
+    mv resources.tar.zst $APP_DIR/bins
+
+    popd
 
     mv $APP_DIR/out/linux-unpacked $APP_DIR/$PACKAGE
-    tar -caf $APP_DIR/bins/app-binary-$ARCH.tar.zst $APP_DIR/$PACKAGE
+
+    pushd "$APP_DIR/out"
+
+    tar -caf app-binary-$ARCH.tar.zst ./$PACKAGE
+    mv app-binary-$ARCH.tar.zst $APP_DIR/bins
+
+    popd
+
 }
 
     popd
