@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.3.1"
+TOOLS_VERSION="2.3.2"
 
 set -x
 
@@ -99,7 +99,7 @@ StartupWMClass=$PACKAGE
 Categories=Games;
 EOF
 
-## deb packing
+## deb packing preparing
 ### Init build dir for the app
 {
     deb_build_dir="$APP_DIR/deb-build-pool/$PACKAGE-$VERSION"
@@ -111,11 +111,11 @@ EOF
     dh_make --createorig -s -n -y
 }
 
-### Generate deb build dir res
+## Generate deb build dir res
 {
     tar -I zstd -xvf $APP_DIR/bins/app-binary-$ARCH.tar.zst\
  -C $deb_app_dir/files/
-    cp -RT $res_path/* $deb_app_dir/
+    cp -r $res_path/* $deb_app_dir/
 }
 
 ### info file
