@@ -52,12 +52,12 @@ export DESC2=""
     cp "${BUILD_DIR}"/*.js "${APP_DIR}/files/userscripts/"
 
 ### tar binaries
-tar() {
+{
     mkdir -p "$BUILD_DIR/bins"
-    tar -caf resources.tar.zst ${BUILD_DIR}/files/resources -C "${BUILD_DIR}/bins"
+    tar -caf ${BUILD_DIR}/bins/resources.tar.zst ${BUILD_DIR}/files/resources
 
     mv ${BUILD_DIR}/out/linux-unpacked ${BUILD_DIR}/$PACKAGE
-    tar -caf app-binary-$ARCH.tar.zst ${BUILD_DIR}/$PACKAGE -C "${BUILD_DIR}/bins"
+    tar -caf ${BUILD_DIR}/bins/app-binary-$ARCH.tar.zst ${BUILD_DIR}/$PACKAGE
 }
 
     popd
