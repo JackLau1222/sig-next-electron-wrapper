@@ -6,8 +6,6 @@ set -x
 
 SELF=$(readlink -f "$0")
 BUILD_DIR=${SELF%/*}
-SRC_DIR=${BUILD_DIR}
-APP_DIR=${BUILD_DIR}
 ARCH=$(uname -m)
 
 ## Writeable Envs
@@ -19,7 +17,6 @@ export PACKAGE=""
 export NAME=""
 export NAME_CN=""
 export VERSION="$ELECTRON_VERSION"
-export ARCH="all"
 export URL="icon.png::icon-url"
 export DO_NOT_UNARCHIVE=1
 # autostart,notification,trayicon,clipboard,account,bluetooth,camera,audio_record,installed_apps
@@ -36,39 +33,49 @@ export DESC2=""
 #export INGREDIENTS=(nodejs)
 
 ## Generated
-    cp "${BUILD_DIR}/templates/index.js" "{$SRC_DIR}/index.js"
+
+### Init build dir for single app
+    mkdir -p ${BUILD_DIR}/build-pool
+{
+    mkdir -p ${BUILD_DIR}/build-pool/$PACKAGE
+    APP_DIR=${BUILD_DIR}/build-pool/$PACKAGE
+    cp "$BUILD_DIR/templates/index.js" "$APP_DIR/index.js"
     mkdir -p ${APP_DIR}/files/
-    cp "${BUILD_DIR}/templates/run.sh" "${APP_DIR}/files/run.sh"
-    cat "${BUILD_DIR}/templates/package.json" | envsubst >"{$SRC_DIR}/package.json"
+    cp "${BUILD_DIR}/templates/run.sh" "$APP_DIR/files/run.sh"
+    cat "${BUILD_DIR}/templates/package.json" | envsubst >"$APP_DIR/package.json"
+}
 
-    pushd "{$SRC_DIR}"
+    pushd "$APP_DIR"
 
+### Building
+{
  #   export ELECTRON_MIRROR=https://registry.npmmirror.com/
     npm install 
     npm run build
-    mkdir -p ${APP_DIR}/files/resources/
-    cp -RT out/linux-unpacked/resources ${APP_DIR}/files/resources
+    mkdir -p $APP_DIR/files/resources/
+    cp -RT $APP_DIR/out/linux-unpacked/resources $APP_DIR/files/resources
     mkdir -p "${APP_DIR}/files/userscripts"
-    cp "${BUILD_DIR}"/*.js "${APP_DIR}/files/userscripts/"
+    cp "$APP_DIR"/*.js "${APP_DIR}/files/userscripts/"
+}
 
 ### tar binaries
 {
-    mkdir -p "$BUILD_DIR/bins"
-    tar -caf ${BUILD_DIR}/bins/resources.tar.zst ${BUILD_DIR}/files/resources
+    mkdir -p "$APP_DIR/bins"
+    tar -caf $APP_DIR/bins/resources.tar.zst $APP_DIR/files/resources
 
-    mv ${BUILD_DIR}/out/linux-unpacked ${BUILD_DIR}/$PACKAGE
-    tar -caf ${BUILD_DIR}/bins/app-binary-$ARCH.tar.zst ${BUILD_DIR}/$PACKAGE
+    mv $APP_DIR/out/linux-unpacked $APP_DIR/$PACKAGE
+    tar -caf $APP_DIR/bins/app-binary-$ARCH.tar.zst $APP_DIR/$PACKAGE
 }
 
     popd
 
-    rm -rf ${APP_DIR}/entries/icons/hicolor/**/apps/icon.png
+    rm -rf $APP_DIR/entries/icons/hicolor/**/apps/icon.png
 
-    mkdir -p "${APP_DIR}/entries/applications"
-    cat <<EOF >${APP_DIR}/entries/applications/$PACKAGE.desktop
+    mkdir -p "$APP_DIR/entries/applications"
+    cat <<EOF >$APP_DIR/entries/applications/$PACKAGE.desktop
 [Desktop Entry]
 Name=$NAME
-Name[zh_CN]=${NAME_CN}
+Name[zh_CN]=$NAME_CN
 Exec=env PACKAGE=$PACKAGE /opt/apps/$PACKAGE/files/run.sh %U
 Terminal=false
 Type=Application
