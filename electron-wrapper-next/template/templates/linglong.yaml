@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2023 UnionTech Software Technology Co., Ltd.
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+version: "1"
+
+package:
+  id: $PACKAGE
+  name: "$NAME"
+  version: $VERSION
+  kind: app
+  description: |
+    $comment
+
+base: org.deepin.foundation/23.0.0
+
+command:
+  - /opt/apps/$PACKAGE/files/bin/start.sh
+
+source:
+  - kind: local
+    name: "$NAME"
+
+build: |
+  ##Extract res
+  mkdir -p ${PREFIX}/bin/ ${PREFIX}/share/
+  cp -rf binary/* ${PREFIX}/bin/
+  cp -rf template_app/* ${PREFIX}/share/
+  ##Generate files
+  echo "#!/usr/bin/env bash" > start.sh
+  echo "cd $PREFIX/bin/$PACKAGE/ && ./$PACKAGE --no-sandbox %U" >> $PREFIX/bin/start.sh
+  chmod +x $PREFIX/bin/start.sh
