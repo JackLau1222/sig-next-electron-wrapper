@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="5.0.0"
+TOOLS_VERSION="5.1.0"
 
 set -x
 
@@ -48,6 +48,7 @@ export DESC2=""
 ### Get 256 icons
 {
     res_sources="$APP_DIR/res-sources"
+    res_path="$APP_DIR/res"
     mkdir -p $res_sources
     wget -c $icon_url -O $res_sources/icon-origin.png
     icons_256_path="$APP_DIR/res/entries/icons/hicolor/256x256/apps"
@@ -225,3 +226,12 @@ EOF
 ## deb Packing
 
     debuild -b -us -uc -tc
+
+if [ ${ARCH} == "x86_64" ]; then
+    arch="amd64"
+elif [ ${ARCH} == "aarch64" ]; then
+    arch="arm64"
+fi
+
+    mv $APP_DIR/deb-build-pool/$PACKAGE_$VERSION_$arch.deb\
+ $APP_DIR/bins/
