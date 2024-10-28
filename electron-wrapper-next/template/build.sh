@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="2.5.1"
+TOOLS_VERSION="3.0.0"
 
 set -x
 
@@ -167,6 +167,8 @@ EOF
 EOF
 }
 
+
+## Generate deb app dir res
 ### desktop file
 {
     mkdir -p "$deb_app_dir/entries/applications"
@@ -187,6 +189,15 @@ StartupNotify=true
 EOF
 }
 
+### AppRun
+{
+    cat <<EOF >$deb_app_dir/files/AppRun
+#!/bin/bash
+
+cd /opt/apps/$PACKAGE/files/$PACKAGE
+exec /opt/apps/com.electron.lts/files/Electron/electron ./resources/app.asar "$@"
+EOF
+}
 
 ## deb Packing
 
