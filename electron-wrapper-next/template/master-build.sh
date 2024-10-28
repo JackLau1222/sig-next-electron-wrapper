@@ -261,9 +261,13 @@ fi
 
 ### Generate linglong.yaml from templates
 ## Envs for linglong.yaml
-export comment="{$name} is an online mini-game provided by the Poki platform."
+export comment="{$NAME} is an online mini-game provided by the Poki platform."
 export prefix="\$PREFIX"
 
 {
     cat "$BUILD_DIR/templates/linglong.yaml" | envsubst >"$ll_build_dir/linglong.yaml"
 }
+
+## Tar linyaps build dir
+    pushd "$APP_DIR"
+    tar -caf $package-ll_build-$ARCH.tar.zst ./ll-build-pool
