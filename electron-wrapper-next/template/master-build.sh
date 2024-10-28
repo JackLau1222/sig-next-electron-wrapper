@@ -222,7 +222,7 @@ EOF
     cat <<EOF >$deb_app_dir/files/AppRun
 #!/bin/bash
 
-cd /opt/apps/$package/files/$package
+cd /opt/apps/$PACKAGE/files/$PACKAGE
 exec /opt/apps/com.electron.lts/files/Electron/electron ./resources/app.asar "\$@"
 EOF
 }
@@ -239,7 +239,7 @@ elif [ ${ARCH} == "aarch64" ]; then
     arch="arm64"
 fi
 
-    mv $APP_DIR/deb-build-pool/"$package"_"$VERSION"_"$arch".deb\
+    mv $APP_DIR/deb-build-pool/"$PACKAGE"_"$VERSION"_"$arch".deb\
  $APP_DIR/bins/
 }
 
@@ -247,7 +247,7 @@ fi
 
 ### Init linyaps build dir
 {
-    APP_DIR="$BUILD_DIR/build-pool/$package"
+    APP_DIR="$BUILD_DIR/build-pool/$PACKAGE"
     ll_build_dir="$APP_DIR/ll-build-pool"
     mkdir -p $ll_build_dir/binary $ll_build_dir/template_app
 }
@@ -270,4 +270,5 @@ export prefix="\$PREFIX"
 
 ## Tar linyaps build dir
     pushd "$APP_DIR"
-    tar -caf $package-ll_build-$ARCH.tar.zst ./ll-build-pool
+    tar -caf $PACKAGE-ll_build-$ARCH.tar.zst ./ll-build-pool
+    rm -rf ./ll-build-pool
