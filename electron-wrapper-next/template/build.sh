@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="3.1.1"
+TOOLS_VERSION="3.2.0"
 
 set -x
 
@@ -117,7 +117,7 @@ export DESC2=""
     cp -r $res_path/* $deb_app_dir/
 }
 
-### Generate control from template
+### Generate control
 {
     rm -rf $deb_build_dir/debian/control
     cat <<EOF >$deb_build_dir/debian/control
@@ -138,11 +138,25 @@ Description: $NAME is an online mini-game provided by the Poki platform.
 EOF
 }
 
-### install file
+### Generate postinst
+{
+    rm -rf $deb_build_dir/debian/postinst
+    cat <<EOF >$deb_build_dir/debian/postinst
+#!/bin/bash
+
+# SUID chrome-sandbox for Electron 5+
+chmod 4755 '/opt/apps/$PACKAGE/files/$PACKAGE/chrome-sandbox' || true
+EOF
+}
+
+### Generate install file
     rm -rf $deb_build_dir/debian/install
     echo "opt/ /" > $deb_build_dir/debian/install
 
-### info file
+
+
+## Generate deb app dir res
+### Generate info file
 {
     cat <<EOF >$deb_app_dir/info
 {
@@ -167,8 +181,6 @@ EOF
 EOF
 }
 
-
-## Generate deb app dir res
 ### desktop file
 {
     mkdir -p "$deb_app_dir/entries/applications"
@@ -199,9 +211,11 @@ exec /opt/apps/com.electron.lts/files/Electron/electron ./resources/app.asar "\$
 EOF
 }
 
+    chmod +x $deb_app_dir/files/AppRun
+
 ## deb Packing
 
-debuild -b -us -uc -tc
+    debuild -b -us -uc -tc
 
 ### Files copy
 {
