@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="3.2.0"
+TOOLS_VERSION="4.0.0"
 
 set -x
 
@@ -112,8 +112,12 @@ export DESC2=""
 
 ## Generate deb build dir res
 {
-    tar -I zstd -xvf $APP_DIR/bins/app-binary-$ARCH.tar.zst\
- -C $deb_app_dir/files/
+    mkdir -p $deb_app_dir/files/$PACKAGE/resources
+
+    tar -I zstd -xvf $APP_DIR/bins/resources.tar.zst\
+ -C $deb_app_dir/files/$PACKAGE/resources/
+
+
     cp -r $res_path/* $deb_app_dir/
 }
 
@@ -139,15 +143,15 @@ EOF
 }
 
 ### Generate postinst
-{
-    rm -rf $deb_build_dir/debian/postinst
-    cat <<EOF >$deb_build_dir/debian/postinst
-#!/bin/bash
-
-# SUID chrome-sandbox for Electron 5+
-chmod 4755 '/opt/apps/$PACKAGE/files/$PACKAGE/chrome-sandbox' || true
-EOF
-}
+#{
+#    rm -rf $deb_build_dir/debian/postinst
+#    cat <<EOF >$deb_build_dir/debian/postinst
+##!/bin/bash
+#
+## SUID chrome-sandbox for Electron 5+
+#chmod 4755 '/opt/apps/$PACKAGE/files/$PACKAGE/chrome-sandbox' || true
+#EOF
+#}
 
 ### Generate install file
     rm -rf $deb_build_dir/debian/install
