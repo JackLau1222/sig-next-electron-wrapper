@@ -6,8 +6,6 @@ DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
 	dh $@
 override_dh_auto_build-arch: 
 
-	bash package_action.sh
-
 override_dh_auto_install-arch:
 	dh_auto_install
 

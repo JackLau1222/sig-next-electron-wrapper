@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="4.1.1"
+TOOLS_VERSION="5.0.0"
 
 set -x
 
@@ -35,13 +35,14 @@ export DESC2=""
 
 ## Generated
 
-### Init build dir for single app
+### Init npm build dir for single app
     mkdir -p $BUILD_DIR/build-pool
 {
-    mkdir -p $BUILD_DIR/build-pool/$PACKAGE
-    APP_DIR=$BUILD_DIR/build-pool/$PACKAGE
-    cp "$BUILD_DIR/templates/index.js" "$APP_DIR/index.js"
-    cat "$BUILD_DIR/templates/package.json" | envsubst >"$APP_DIR/package.json"
+    APP_DIR="$BUILD_DIR/build-pool/$PACKAGE"
+    npm_build_dir="$APP_DIR/npm-build-pool"
+    mkdir -p $APP_DIR $npm_build_dir
+    cp "$BUILD_DIR/templates/index.js" "$npm_build_dir/index.js"
+    cat "$BUILD_DIR/templates/package.json" | envsubst >"$npm_build_dir/package.json"
 }
 
 ### Get 256 icons
@@ -59,32 +60,32 @@ export DESC2=""
     res_path="$APP_DIR/res"
     icons_128_path="$APP_DIR/res/entries/icons/hicolor/128x128/apps"
     mkdir -p $icons_128_path
-    convert -resize 128x128! $res_sources/icon-origin.png $icons_path/$PACKAGE.png
+    convert -resize 128x128! $res_sources/icon-origin.png $icons_128_path/$PACKAGE.png
 }
 
-    pushd "$APP_DIR"
+    pushd "$npm_build_dir"
 
 ## Building
 {
  #   export ELECTRON_MIRROR=https://registry.npmmirror.com/
     npm install 
     npm run build
-    mkdir -p $APP_DIR/files/resources/
-    cp -RT $APP_DIR/out/linux-unpacked/resources $APP_DIR/files/resources
-    mkdir -p "$APP_DIR/files/userscripts"
-    cp "$APP_DIR"/*.js "${APP_DIR}/files/userscripts/"
+    mkdir -p $npm_build_dir/files/resources/
+    cp -RT $npm_build_dir/out/linux-unpacked/resources $npm_build_dir/files/resources
+    mkdir -p "$npm_build_dir/files/userscripts"
+    cp "$npm_build_dir"/*.js "${npm_build_dir}/files/userscripts/"
 }
 
 ## tar binaries
 {
     mkdir -p "$APP_DIR/bins"
 
-    pushd "$APP_DIR/files/resources"
+    pushd "$npm_build_dir/files/resources"
 
     tar -caf resources.tar.zst ./app.asar
     mv resources.tar.zst $APP_DIR/bins
 
-    pushd "$APP_DIR/out"
+    pushd "$npm_build_dir/out"
     mv linux-unpacked $PACKAGE
 
     tar -caf app-binary-$ARCH.tar.zst ./$PACKAGE
