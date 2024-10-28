@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="4.1.0"
+TOOLS_VERSION="4.1.1"
 
 set -x
 
@@ -41,8 +41,6 @@ export DESC2=""
     mkdir -p $BUILD_DIR/build-pool/$PACKAGE
     APP_DIR=$BUILD_DIR/build-pool/$PACKAGE
     cp "$BUILD_DIR/templates/index.js" "$APP_DIR/index.js"
-    mkdir -p $APP_DIR/files/
-    cp "$BUILD_DIR/templates/run.sh" "$APP_DIR/files/run.sh"
     cat "$BUILD_DIR/templates/package.json" | envsubst >"$APP_DIR/package.json"
 }
 
@@ -160,6 +158,9 @@ EOF
     echo "opt/ /" > $deb_build_dir/debian/install
 
 
+### Generate rules
+    rm -rf $deb_build_dir/debian/rules
+    cp "$BUILD_DIR/templates/rules" "$deb_build_dir/debian/rules"
 
 ## Generate deb app dir res
 ### Generate info file
@@ -223,14 +224,3 @@ EOF
 ## deb Packing
 
     debuild -b -us -uc -tc
-
-### Files copy
-{
-    mkdir -p $APP_DIR/deb-build-pool
-    mkdir -p $BUILD_DIR/build-pool/$PACKAGE
-    APP_DIR=$BUILD_DIR/build-pool/$PACKAGE
-    cp "$BUILD_DIR/templates/index.js" "$APP_DIR/index.js"
-    mkdir -p $APP_DIR/files/
-    cp "$BUILD_DIR/templates/run.sh" "$APP_DIR/files/run.sh"
-    cat "$BUILD_DIR/templates/package.json" | envsubst >"$APP_DIR/package.json"
-}
