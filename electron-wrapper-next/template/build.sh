@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="5.0.0"
+TOOLS_VERSION="7.0.0"
 
 set -x
 
@@ -14,29 +14,25 @@ icon_url=""
 NODE_PATH=""
 export PATH="$NODE_PATH:$PATH"
 export ELECTRON_VERSION=""
+export VERSION="$ELECTRON_VERSION"
 
 export PACKAGE=""
-export NAME=""
 export NAME_CN=""
-export VERSION="$ELECTRON_VERSION"
-export URL="icon.png::icon_url"
-export DO_NOT_UNARCHIVE=1
-# autostart,notification,trayicon,clipboard,account,bluetooth,camera,audio_record,installed_apps
-export REQUIRED_PERMISSIONS=""
-
+export NAME=""
 export HOMEPAGE="" # wrapper content
-# export DEPENDS="libgconf-2-4, libgtk-3-0, libnotify4, libnss3, libxtst6, xdg-utils, libatspi2.0-0, libdrm2, libgbm1, libxcb-dri3-0, kde-cli-tools | kde-runtime | trash-cli | libglib2.0-bin | gvfs-bin"
-export DEPENDS="com.electron"
-export SECTION="misc"
-export PROVIDE=""
-export DESC1="Electron wrapper for $HOMEPAGE"
-export DESC2=""
+
 }
 
+
+## Auto read
+## Envs for npm info
+export URL="icon.png::$icon_url"
+
+
 ## Generated
+    mkdir -p $BUILD_DIR/build-pool
 
 ### Init npm build dir for single app
-    mkdir -p $BUILD_DIR/build-pool
 {
     APP_DIR="$BUILD_DIR/build-pool/$PACKAGE"
     npm_build_dir="$APP_DIR/npm-build-pool"
@@ -48,6 +44,7 @@ export DESC2=""
 ### Get 256 icons
 {
     res_sources="$APP_DIR/res-sources"
+    res_path="$APP_DIR/res"
     mkdir -p $res_sources
     wget -c $icon_url -O $res_sources/icon-origin.png
     icons_256_path="$APP_DIR/res/entries/icons/hicolor/256x256/apps"
@@ -118,7 +115,6 @@ export DESC2=""
     tar -I zstd -xvf $APP_DIR/bins/resources.tar.zst\
  -C $deb_app_dir/files/$PACKAGE/resources/
 
-
     cp -r $res_path/* $deb_app_dir/
 }
 
@@ -150,11 +146,12 @@ EOF
 ##!/bin/bash
 #
 ## SUID chrome-sandbox for Electron 5+
-#chmod 4755 '/opt/apps/$PACKAGE/files/$PACKAGE/chrome-sandbox' || true
+#chmod 4755 '/opt/apps/$package/files/$package/chrome-sandbox' || true
 #EOF
 #}
 
 ### Generate install file
+{
     rm -rf $deb_build_dir/debian/install
     echo "opt/ /" > $deb_build_dir/debian/install
 
@@ -162,6 +159,7 @@ EOF
 ### Generate rules
     rm -rf $deb_build_dir/debian/rules
     cp "$BUILD_DIR/templates/rules" "$deb_build_dir/debian/rules"
+}
 
 ## Generate deb app dir res
 ### Generate info file
@@ -215,7 +213,7 @@ EOF
     cat <<EOF >$deb_app_dir/files/AppRun
 #!/bin/bash
 
-cd /opt/apps/$PACKAGE/files/$PACKAGE
+cd /opt/apps/$package/files/$package
 exec /opt/apps/com.electron.lts/files/Electron/electron ./resources/app.asar "\$@"
 EOF
 }
@@ -223,5 +221,38 @@ EOF
     chmod +x $deb_app_dir/files/AppRun
 
 ## deb Packing
-
+{
     debuild -b -us -uc -tc
+
+if [ ${ARCH} == "x86_64" ]; then
+    arch="amd64"
+elif [ ${ARCH} == "aarch64" ]; then
+    arch="arm64"
+fi
+
+    mv $APP_DIR/deb-build-pool/"$package"_"$VERSION"_"$arch".deb\
+ $APP_DIR/bins/
+}
+
+## Linyaps packing
+
+### Init linyaps build dir
+{
+    APP_DIR="$BUILD_DIR/build-pool/$package"
+    ll_build_dir="$APP_DIR/ll-build-pool"
+    mkdir -p $ll_build_dir/binary $ll_build_dir/template_app
+}
+
+### Extract pre-build res
+{
+    tar -I zstd -xvf $APP_DIR/bins/app-binary-$ARCH.tar.zst\
+ -C $ll_build_dir/binary/
+    cp -r $deb_app_dir/entries/* $ll_build_dir/template_app/
+}
+
+### Generate linglong.yaml from templates
+## Envs for linglong.yaml
+export comment="{$name} is an online mini-game provided by the Poki platform."
+{
+    cat "$BUILD_DIR/templates/linglong.yaml" | envsubst >"$ll_build_dir/linglong.yaml"
+}
