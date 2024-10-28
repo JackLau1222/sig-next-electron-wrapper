@@ -14,7 +14,16 @@ icon_url=""
 NODE_PATH=""
 export PATH="$NODE_PATH:$PATH"
 export ELECTRON_VERSION=""
-export VERSION="$ELECTRON_VERSION"
+build_num=""
+
+if [ "${build_num}" == "" ]; then
+  export VERSION="${ELECTRON_VERSION}"
+  export LL_VERSION="${ELECTRON_VERSION}"
+else
+  export VERSION="${ELECTRON_VERSION}"
+  export LL_VERSION="$ELECTRON_VERSION"."$build_num"
+fi
+
 
 export PACKAGE=""
 export NAME_CN=""
