@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="3.0.0"
+TOOLS_VERSION="3.0.1"
 
 set -x
 
@@ -178,7 +178,7 @@ Name=$NAME
 Name[zh_CN]=$NAME_CN
 Comment=$NAME is an online mini-game provided by the Poki platform.
 Comment[zh_CN]=$NAME_CN 是Poki平台提供的一款在线小型游戏.
-Exec=env PACKAGE=$PACKAGE /opt/apps/$PACKAGE/files/run.sh %U
+Exec=env PACKAGE=$PACKAGE /opt/apps/$PACKAGE/files/AppRun %U
 Icon=$PACKAGE
 Type=Application
 Categories=Games;
