@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TOOLS_VERSION="4.0.0"
+TOOLS_VERSION="4.1.0"
 
 set -x
 
@@ -46,19 +46,21 @@ export DESC2=""
     cat "$BUILD_DIR/templates/package.json" | envsubst >"$APP_DIR/package.json"
 }
 
-### Get icons
+### Get 256 icons
 {
     res_sources="$APP_DIR/res-sources"
     mkdir -p $res_sources
     wget -c $icon_url -O $res_sources/icon-origin.png
+    icons_256_path="$APP_DIR/res/entries/icons/hicolor/256x256/apps"
+    mkdir -p $icons_256_path
+    cp $res_sources/icon-origin.png $icons_256_path/$PACKAGE.png
 }
 
-### Resize icons
+### Resize icons to 128
 {
     res_path="$APP_DIR/res"
-    icons_path="$APP_DIR/res/entries/icons/hicolor/128x128/apps"
-    desktop_file_path="$APP_DIR/res/entries/applications"
-    mkdir -p $icons_path $desktop_file_path
+    icons_128_path="$APP_DIR/res/entries/icons/hicolor/128x128/apps"
+    mkdir -p $icons_128_path
     convert -resize 128x128! $res_sources/icon-origin.png $icons_path/$PACKAGE.png
 }
 
@@ -187,6 +189,7 @@ EOF
 
 ### desktop file
 {
+    desktop_file_path="$APP_DIR/res/entries/applications"
     mkdir -p "$deb_app_dir/entries/applications"
     cat <<EOF >$deb_app_dir/entries/applications/$PACKAGE.desktop
 [Desktop Entry]
