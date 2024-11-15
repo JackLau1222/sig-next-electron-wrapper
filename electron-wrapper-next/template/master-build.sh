@@ -1,20 +1,24 @@
 #!/bin/bash
 
-TOOLS_VERSION="7.0.0"
+TOOLS_VERSION="7.4.4"
 
 set -x
 
 SELF=$(readlink -f "$0")
 BUILD_DIR=${SELF%/*}
 ARCH=$(uname -m)
-icon_url=""
 
 ## Writeable Envs
 {
+maintainer_name=""
+maintainer_email=""
 NODE_PATH=""
-export PATH="$NODE_PATH:$PATH"
-export ELECTRON_VERSION=""
 build_num=""
+ELECTRON_VERSION=""
+
+## Auto-generated
+export PATH="$NODE_PATH:$PATH"
+export ELECTRON_VERSION=$ELECTRON_VERSION
 
 if [ "${build_num}" == "" ]; then
   export VERSION="${ELECTRON_VERSION}"
@@ -23,28 +27,34 @@ else
   export VERSION="${ELECTRON_VERSION}"
   export LL_VERSION="$ELECTRON_VERSION"."$build_num"
 fi
-
-
-export PACKAGE=""
-export NAME_CN=""
-export NAME=""
-export HOMEPAGE="" # wrapper content
-
 }
 
-
 ## Auto read
+while IFS=_ read package name homepage icon_url developer; do
+
 ## Envs for npm info
 export URL="icon.png::$icon_url"
-
+export NAME=$name
+export HOMEPAGE=$homepage
+export npm_package=$package
+export auth_name=$maintainer_name
+export auth_email=$maintainer_email
 
 ## Generated
     mkdir -p $BUILD_DIR/build-pool
 
 ### Init npm build dir for single app
 {
-    APP_DIR="$BUILD_DIR/build-pool/$PACKAGE"
+    APP_DIR="$BUILD_DIR/build-pool/$package"
     npm_build_dir="$APP_DIR/npm-build-pool"
+    ## Set the electron project arch
+    if [ ${ARCH} == "x86_64" ]; then
+      export electron_arch="x64"
+      unpacked_dir="linux-unpacked"
+    elif [ ${ARCH} == "aarch64" ]; then
+      export electron_arch="arm64"
+      unpacked_dir="linux-arm64-unpacked"
+    fi
     mkdir -p $APP_DIR $npm_build_dir
     cp "$BUILD_DIR/templates/index.js" "$npm_build_dir/index.js"
     cat "$BUILD_DIR/templates/package.json" | envsubst >"$npm_build_dir/package.json"
@@ -58,7 +68,7 @@ export URL="icon.png::$icon_url"
     wget -c $icon_url -O $res_sources/icon-origin.png
     icons_256_path="$APP_DIR/res/entries/icons/hicolor/256x256/apps"
     mkdir -p $icons_256_path
-    cp $res_sources/icon-origin.png $icons_256_path/$PACKAGE.png
+    cp $res_sources/icon-origin.png $icons_256_path/$package.png
 }
 
 ### Resize icons to 128
@@ -66,18 +76,21 @@ export URL="icon.png::$icon_url"
     res_path="$APP_DIR/res"
     icons_128_path="$APP_DIR/res/entries/icons/hicolor/128x128/apps"
     mkdir -p $icons_128_path
-    convert -resize 128x128! $res_sources/icon-origin.png $icons_128_path/$PACKAGE.png
+    convert -resize 128x128! $res_sources/icon-origin.png $icons_128_path/$package.png
 }
 
     pushd "$npm_build_dir"
 
 ## Building
+### Install cnpm & Set mirror for Electron
+npm install -g cnpm --registry=https://registry.npmmirror.com
+export ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
+
 {
- #   export ELECTRON_MIRROR=https://registry.npmmirror.com/
-    npm install 
-    npm run build
+    cnpm install 
+    cnpm run build
     mkdir -p $npm_build_dir/files/resources/
-    cp -RT $npm_build_dir/out/linux-unpacked/resources $npm_build_dir/files/resources
+    cp -RT $npm_build_dir/out/$unpacked_dir/resources $npm_build_dir/files/resources
     mkdir -p "$npm_build_dir/files/userscripts"
     cp "$npm_build_dir"/*.js "${npm_build_dir}/files/userscripts/"
 }
@@ -92,9 +105,9 @@ export URL="icon.png::$icon_url"
     mv resources.tar.zst $APP_DIR/bins
 
     pushd "$npm_build_dir/out"
-    mv linux-unpacked $PACKAGE
+    mv $unpacked_dir $package
 
-    tar -caf app-binary-$ARCH.tar.zst ./$PACKAGE
+    tar -caf app-binary-$ARCH.tar.zst ./$package
     mv app-binary-$ARCH.tar.zst $APP_DIR/bins
 }
 
@@ -106,8 +119,8 @@ export URL="icon.png::$icon_url"
 ## deb packing preparing
 ### Init build dir for the app
 {
-    deb_build_dir="$APP_DIR/deb-build-pool/$PACKAGE-$VERSION"
-    deb_app_dir="$deb_build_dir/opt/apps/$PACKAGE/"
+    deb_build_dir="$APP_DIR/deb-build-pool/$package-$VERSION"
+    deb_app_dir="$deb_build_dir/opt/apps/$package/"
     mkdir -p $deb_build_dir $deb_app_dir/files
 
     pushd "$deb_build_dir"
@@ -119,10 +132,10 @@ export URL="icon.png::$icon_url"
 
 ## Generate deb build dir res
 {
-    mkdir -p $deb_app_dir/files/$PACKAGE/resources
+    mkdir -p $deb_app_dir/files/$package/resources
 
     tar -I zstd -xvf $APP_DIR/bins/resources.tar.zst\
- -C $deb_app_dir/files/$PACKAGE/resources/
+ -C $deb_app_dir/files/$package/resources/
 
     cp -r $res_path/* $deb_app_dir/
 }
@@ -131,20 +144,20 @@ export URL="icon.png::$icon_url"
 {
     rm -rf $deb_build_dir/debian/control
     cat <<EOF >$deb_build_dir/debian/control
-Source: $PACKAGE
+Source: $package
 Section: games
 Priority: optional
-Maintainer: Next Electron Wrapper <lu1044100652@outlook.com>
-Vendor: ziggy1030 <lu1044100652@outlook.com>
+Maintainer: $maintainer_name <$maintainer_email>
+Vendor: Next Electron Wrapper <lu1044100652@outlook.com>
 Build-Depends: debhelper (>= 11)
 Standards-Version: 4.1.3
-Homepage: $HOMEPAGE
+Homepage: $homepage
 
-Package: $PACKAGE
+Package: $package
 Architecture: any
 Version: $VERSION
 Depends: libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0, com.electron.lts (>= 28.3.3)
-Description: $NAME is an online mini-game provided by the Poki platform.
+Description: $name is an online mini-game provided by the Poki platform.
 EOF
 }
 
@@ -175,8 +188,8 @@ EOF
 {
     cat <<EOF >$deb_app_dir/info
 {
-  "appid": "$PACKAGE",
-  "name": "$NAME",
+  "appid": "$package",
+  "name": "$name",
   "version": "$VERSION",
   "arch": [
     "amd64,arm64"
@@ -200,17 +213,17 @@ EOF
 {
     desktop_file_path="$APP_DIR/res/entries/applications"
     mkdir -p "$deb_app_dir/entries/applications"
-    cat <<EOF >$deb_app_dir/entries/applications/$PACKAGE.desktop
+    cat <<EOF >$deb_app_dir/entries/applications/$package.desktop
 [Desktop Entry]
-Name=$NAME
-Name[zh_CN]=$NAME_CN
-Comment=$NAME is an online mini-game provided by the Poki platform.
-Comment[zh_CN]=$NAME_CN 是Poki平台提供的一款在线小型游戏.
-Exec=/opt/apps/$PACKAGE/files/AppRun %U
-Icon=$PACKAGE
+Name=$name
+Name[zh_CN]=$name
+Comment=$name is an online mini-game provided by the Poki platform.
+Comment[zh_CN]=$name 是Poki平台提供的一款在线小型游戏.
+Exec=/opt/apps/$package/files/AppRun %U
+Icon=$package
 Type=Application
 Categories=Games;
-StartupWMClass=$PACKAGE
+StartupWMClass=$package
 
 Terminal=false
 StartupNotify=true
@@ -222,7 +235,7 @@ EOF
     cat <<EOF >$deb_app_dir/files/AppRun
 #!/bin/bash
 
-cd /opt/apps/$PACKAGE/files/$PACKAGE
+cd /opt/apps/$package/files/$package
 exec /opt/apps/com.electron.lts/files/Electron/electron ./resources/app.asar "\$@"
 EOF
 }
@@ -239,7 +252,7 @@ elif [ ${ARCH} == "aarch64" ]; then
     arch="arm64"
 fi
 
-    mv $APP_DIR/deb-build-pool/"$PACKAGE"_"$VERSION"_"$arch".deb\
+    mv $APP_DIR/deb-build-pool/"$package"_"$VERSION"_"$arch".deb\
  $APP_DIR/bins/
 }
 
@@ -247,28 +260,42 @@ fi
 
 ### Init linyaps build dir
 {
-    APP_DIR="$BUILD_DIR/build-pool/$PACKAGE"
+    APP_DIR="$BUILD_DIR/build-pool/$package"
     ll_build_dir="$APP_DIR/ll-build-pool"
-    mkdir -p $ll_build_dir/binary $ll_build_dir/template_app
+    mkdir -p $ll_build_dir/binary $ll_build_dir/template_app/applications
 }
 
 ### Extract pre-build res
 {
     tar -I zstd -xvf $APP_DIR/bins/app-binary-$ARCH.tar.zst\
  -C $ll_build_dir/binary/
-    cp -r $deb_app_dir/entries/* $ll_build_dir/template_app/
+    cp -r $deb_app_dir/entries/icons $ll_build_dir/template_app/
 }
 
 ### Generate linglong.yaml from templates
 ## Envs for linglong.yaml
-export comment="{$NAME} is an online mini-game provided by the Poki platform."
-export prefix="\$PREFIX"
+    export comment="$name is an online mini-game provided by the Poki platform."
+    export prefix="\$PREFIX"
+    export PACKAGE=$package.linyaps
+    export package=$package
+    export name=$name
+    export LL_VERSION=$LL_VERSION
+
+## Different runtime version according to the arch
+    if [ ${ARCH} == "x86_64" ]; then
+      export foundation_version="23.0.0"
+    elif [ ${ARCH} == "aarch64" ]; then
+      export foundation_version="20.0.0"
+    fi
 
 {
     cat "$BUILD_DIR/templates/linglong.yaml" | envsubst >"$ll_build_dir/linglong.yaml"
+    cat "$BUILD_DIR/templates/ll.desktop" | envsubst >"$ll_build_dir/template_app/applications/$PACKAGE.desktop"
 }
 
 ## Tar linyaps build dir
     pushd "$APP_DIR"
-    tar -caf $PACKAGE-ll_build-$ARCH.tar.zst ./ll-build-pool
-    rm -rf ./ll-build-pool
+    tar -caf $package-ll_build-$ARCH.tar.zst ./ll-build-pool
+    rm -rf $ll_build_dir $npm_build_dir $deb_build_dir
+
+done < "$1"
